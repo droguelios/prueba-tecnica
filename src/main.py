@@ -13,7 +13,7 @@ from src.database import (
     cargar_solicitudes,
     cargar_y_limpiar_empleados,
     crear_tablas,
-    insertar_datos,
+    insertar_datos, ejecutar_consultas_sql
 )
 def procesar_solicitud(solicitud , conexion , festivos) -> dict: 
             
@@ -64,6 +64,10 @@ def ejecutar_pipeline () -> None:
         solicitudes = cargar_solicitudes ("data/solicitudes.json")
         insertar_datos (conexion, empleados, solicitudes)
 
+        consultas_sql = ejecutar_consultas_sql(conexion)
+        with open(Path("output/consultas_sql.json"), "w", encoding="utf-8") as archivo_sql:
+            json.dump(consultas_sql, archivo_sql, ensure_ascii=False, indent=2)
+
         festivos = api_festivos(2026)
         resultados = []
 
@@ -108,6 +112,7 @@ def ejecutar_pipeline () -> None:
             json.dump(metricas, archivo_metricas, ensure_ascii=False, indent=2)
 
         print(f"Exactitud IA: {aciertos}/{total} ({exactitud}%) | Errores: {len(errores)}")
+
         
                     
     finally:

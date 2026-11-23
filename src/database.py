@@ -37,6 +37,53 @@ def crear_tablas(conexion: sqlite3.Connection) -> None:
 
     conexion.commit()
 
+def ejecutar_consultas_sql(conexion) -> dict:
+    cursor = conexion.cursor()
+
+    consultas = {
+        "solicitudes_por_categoria_y_area": """
+            SELECT 
+                s.etiqueta_esperada AS categoria,
+                COALESCE(e.area, 'No registrado') AS area,
+                COUNT(*) AS total
+            FROM solicitudes s
+            LEFT JOIN empleados e ON s.id_empleado = e.id_empleado
+            GROUP BY s.etiqueta_esperada, COALESCE(e.area, 'No registrado')
+            ORDER BY total DESC, categoria;
+        """,
+        "solicitudes_sin_empleado_en_nomina": """
+            SELECT 
+                s.id_solicitud,
+                s.id_empleado,
+                s.fecha_recepcion,
+                s.canal,
+                s.etiqueta_esperada
+            FROM solicitudes s
+            LEFT JOIN empleados e ON s.id_empleado = e.id_empleado
+            WHERE e.id_empleado IS NULL;
+        """,
+        "empleados_menos_5_dias_vacaciones": """
+            SELECT 
+                id_empleado,
+                nombre,
+                area,
+                dias_vacaciones_disponibles
+            FROM empleados
+            WHERE dias_vacaciones_disponibles < 5
+            ORDER BY dias_vacaciones_disponibles ASC;
+        """,
+    }
+
+    resultados = {}
+    for nombre_consulta, sql in consultas.items():
+        cursor.execute(sql)
+        columnas = [col[0] for col in cursor.description]
+        resultados[nombre_consulta] = [
+            dict(zip(columnas, fila)) for fila in cursor.fetchall()
+        ]
+
+    return resultados
+
 
 def cargar_y_limpiar_empleados(ruta_csv: str) -> list[dict]:
     empleado_limpios = []
